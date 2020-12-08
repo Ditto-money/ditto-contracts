@@ -1,5 +1,5 @@
 <p align="center">
-	<img src="/static/money-printer-chad.png" height="250px"/>
+	<img src="money-printer-chad.png" height="250px"/>
 </p>
 
 # Ditto Money
