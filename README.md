@@ -1,3 +1,7 @@
+<p align="center">
+	<img src="/static/money-printer-chad.png" height="250px"/>
+</p>
+
 # Ditto Money
 
 Smart contracts for the Ditto elastic supply token.
