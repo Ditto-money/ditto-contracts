@@ -47,7 +47,7 @@ Transferring DittoTokens is initially restricted to the owner. This is to allow 
 
 ## Oracle deployment
 
-The market oracle must be deployed last after the token has been listed on an AMM and has sufficient liquidity. To get going, a simple getter/setter Oracle can be used where the owner sets prices manually. The Oracle is switched for the market oracle once it has been tested and confirmed to be reliable. 
+The market oracle must be deployed last after the token has been listed on an AMM and has sufficient liquidity. To get going, a [simple getter/setter Oracle](SimpleOracle.sol) can be used where the owner sets prices manually. The Oracle is switched for the market oracle once it has been tested and confirmed to be reliable. 
 
 The oracle calculates a rate for Ditto/USD based on a DITTO/BNB and BNB/USD pool, where "USD" is some kind of USD stable coin that must have high liquidity. O)n Binance Smart Chain, BUSD pools are most suited for this purpose.
 
