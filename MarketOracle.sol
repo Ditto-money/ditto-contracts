@@ -451,9 +451,9 @@ contract MarketOracle is IOracle, Ownable {
         (uint price0Cumulative, uint price1Cumulative, uint32 _blockTimestamp) =
             UniswapV2OracleLibrary.currentCumulativePrices(address(_ditto_bnb));
             
-        FixedPoint.uq112x112 memory rebBnbAverage = FixedPoint.uq112x112(uint224(1e9 * (price0Cumulative - dittoBnbPrice0CumulativeLast) / (_blockTimestamp - dittoBnbBlockTimestampLast)));
+        FixedPoint.uq112x112 memory dittoBnbAverage = FixedPoint.uq112x112(uint224(1e9 * (price0Cumulative - dittoBnbPrice0CumulativeLast) / (_blockTimestamp - dittoBnbBlockTimestampLast)));
         
-        return (price0Cumulative, price1Cumulative, _blockTimestamp, rebBnbAverage.mul(1).decode144());
+        return (price0Cumulative, price1Cumulative, _blockTimestamp, dittoBnbAverage.mul(1).decode144());
     }
     
     // Get the average price of 1 USD in the smallest BNB unit (18 decimals)
