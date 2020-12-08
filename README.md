@@ -17,11 +17,16 @@ The third necessary component is the price Oracle. The [MarketOracle](MarketOrac
 
 ## Configuration
 
-- Rebase lag:
-- Rebase 
+Important rebase parameters are found in the master contract. Most of these values are set during construction or directly in the code.
 
-## Deployment
+- `deviationThreshold`:  If the current exchange rate is within this fractional distance from the target price, no supply update is performed. By default this is set to 0.05.
+- `rebaseCooldown:` Minimum time that must pass between rebases, in seconds. The default value is 7,200.
 
+### Notifying pools of supply changes
+
+Most of the time, liquidity and lending pools need to be notified of rebases so that the internal accounting is updated accordingly. This needs to happen atomically in the same transaction as the rebase. If this is not done correctly, attackers can take advantage of the internal accounting mismatch to steal value from liquidity providers.
+
+The Master contract maintains a list of external function calls that are executed at the end of every rebase. The appropriate calls must be added by the contract owner whenever a new Ditto liquidity pool is created (e.g., call `sync()` in an Uniswap liquidity pool). Use `addTransaction(address destination, bytes calldata data)` to add a call to the list.
 
 ### Intial distribution lock
 
