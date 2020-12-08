@@ -4,7 +4,7 @@
 
 # Ditto Money
 
-Smart contracts for the Ditto elastic supply token. In Ditto money, the total token supply is not fixed, but instead adjusts on a regular basis. These supply adjustments, called "rebases",  are done in such a way that users’ proportional holdings don’t change and thus aren’t diluted. Rebases are performed to achieve a specific target price, with the idea being that a token’s nominal price will steadily be moved over time toward its target. In the case of Ditto money the price target is simply $1.
+Ditto money is an elastic supply token. The total supply of Ditto is not fixed, but instead adjusts on a regular basis. These supply adjustments, called "rebases",  are done in such a way that users’ proportional holdings don’t change and thus aren’t diluted. Rebases are performed to achieve a specific target price, with the idea being that a token’s nominal price will steadily be moved over time toward its target. In the case of Ditto money the price target is simply $1.
 
 ## Architecture
 
