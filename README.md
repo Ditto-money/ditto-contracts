@@ -22,6 +22,19 @@ Important rebase parameters are found in the master contract. Most of these valu
 - `deviationThreshold`:  If the current exchange rate is within this fractional distance from the target price, no supply update is performed. By default this is set to 0.05.
 - `rebaseCooldown:` Minimum time that must pass between rebases, in seconds. The default value is 7,200.
 
+### Variable rebase lag
+
+Supply adjustments in Ditto are calculated as:
+
+```
+(_totalSupply * DeviationFromTargetRate) / rebaseLag
+```
+
+The `rebaseLag` is meant to "soften" the effect of the rebase. In Ditto money, `rebaseLag` is set to different values depending if the rebase is positive or negative. The default values are:
+
+- Negative rebase lag: 2
+- Positive rebase lag: 5
+
 ### Notifying pools of supply changes
 
 Most of the time, liquidity and lending pools need to be notified of rebases so that the internal accounting is updated accordingly. This needs to happen atomically in the same transaction as the rebase. If this is not done correctly, attackers can take advantage of the internal accounting mismatch to steal value from liquidity providers.
@@ -30,6 +43,18 @@ The Master contract maintains a list of external function calls that are execute
 
 ### Intial distribution lock
 
-Transferring DittoTokens is initially restricted to the owner. This is to allow an orderly distribution via airdrops, token sale, etc., while preventing users from listing Ditto on AMMs ahead of the Ditto team. Once the distribution lock has been released bu the contract creator it cannot be re-engaged.
+Transferring DittoTokens is initially restricted to the owner. This is to allow an orderly distribution via airdrops, token sale, etc., while preventing users from listing Ditto on AMMs ahead of the Ditto team. Once the distribution lock has been released by the contract creator it cannot be re-engaged.
+
+## Oracle deployment
+
+The market oracle must be deployed last after the token has been listed on an AMM and has sufficient liquidity. To get going, a simple getter/setter Oracle can be used where the owner sets prices manually. The Oracle is switched for the market oracle once it has been tested and confirmed to be reliable. 
+
+The oracle calculates a rate for Ditto/USD based on a DITTO/BNB and BNB/USD pool, where "USD" is some kind of USD stable coin that must have high liquidity. O)n Binance Smart Chain, BUSD pools are most suited for this purpose.
 
 ## Ditto on the BSC Testnet
+
+Testnet instances of the Ditto Money contracts are available on the BSC testnet. Let us know on Telegram if you want some testnet DITTO to play with.
+
+- [Ditto Token](https://testnet.bscscan.com/address/0xbf8C8eFD410414929eb63c62E2C28596c1AB7318)
+- [Ditto Master](https://testnet.bscscan.com/address/0xA121Fde07be72Dc9494FBa99bc84E48724a68820)
+
