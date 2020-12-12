@@ -1,4 +1,5 @@
-pragma solidity 0.5.17;
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.5.17 <0.8.0;
 
 /**
  * @title Staking interface, as defined by EIP-900.

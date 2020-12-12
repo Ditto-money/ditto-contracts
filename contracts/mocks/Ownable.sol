@@ -1,38 +1,5 @@
-pragma solidity 0.5.17;
-
-
-/**
- * @title ERC20 interface
- * @dev see https://github.com/ethereum/EIPs/issues/20
- */
-interface IERC20 {
-  function totalSupply() external view returns (uint256);
-
-  function balanceOf(address who) external view returns (uint256);
-
-  function allowance(address owner, address spender)
-    external view returns (uint256);
-
-  function transfer(address to, uint256 value) external returns (bool);
-
-  function approve(address spender, uint256 value)
-    external returns (bool);
-
-  function transferFrom(address from, address to, uint256 value)
-    external returns (bool);
-
-  event Transfer(
-    address indexed from,
-    address indexed to,
-    uint256 value
-  );
-
-  event Approval(
-    address indexed owner,
-    address indexed spender,
-    uint256 value
-  );
-}
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.5.17 <0.8.0;
 
 /**
  * @title Ownable
@@ -43,7 +10,7 @@ contract Ownable {
   address private _owner;
 
   event OwnershipRenounced(address indexed previousOwner);
-  
+
   event OwnershipTransferred(
     address indexed previousOwner,
     address indexed newOwner
@@ -108,31 +75,4 @@ contract Ownable {
     emit OwnershipTransferred(_owner, newOwner);
     _owner = newOwner;
   }
-}
-
-/**
- * @title A simple holder of tokens.
- * This is a simple contract to hold tokens. It's useful in the case where a separate contract
- * needs to hold multiple distinct pools of the same token.
- */
-contract TokenPool is Ownable {
-    IERC20 public token;
-
-    constructor(IERC20 _token) public {
-        token = _token;
-    }
-
-    function balance() public view returns (uint256) {
-        return token.balanceOf(address(this));
-    }
-
-    function transfer(address to, uint256 value) external onlyOwner returns (bool) {
-        return token.transfer(to, value);
-    }
-
-    function rescueFunds(address tokenToRescue, address to, uint256 amount) external onlyOwner returns (bool) {
-        require(address(token) != tokenToRescue, 'TokenPool: Cannot claim token held by the contract');
-
-        return IERC20(tokenToRescue).transfer(to, amount);
-    }
 }
