@@ -24,14 +24,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-pragma solidity 0.5.17;
+pragma solidity >=0.5.17 <0.8.0;
 
-
-interface IOracle {
-    function getData() external view returns (uint256);
-    function update() external;
-}
-
+import "./lib/SafeMath.sol";
+import "./mocks/Ownable.sol";
+import "./mocks/IOracle.sol";
 
 
 interface IUniswapV2Factory {
@@ -99,20 +96,6 @@ interface IUniswapV2Pair {
     function sync() external;
 
     function initialize(address, address) external;
-}
-
-library SafeMath {
-    function add(uint x, uint y) internal pure returns (uint z) {
-        require((z = x + y) >= x, 'ds-math-add-overflow');
-    }
-
-    function sub(uint x, uint y) internal pure returns (uint z) {
-        require((z = x - y) <= x, 'ds-math-sub-underflow');
-    }
-
-    function mul(uint x, uint y) internal pure returns (uint z) {
-        require(y == 0 || (z = x * y) / y == x, 'ds-math-mul-overflow');
-    }
 }
 
 
@@ -280,7 +263,7 @@ library UniswapV2Library {
             amounts[i - 1] = getAmountIn(amounts[i], reserveIn, reserveOut);
         }
     }
-    
+
 }
 
 // library with helper mBnbods for oracles that are concerned with computing average prices
@@ -316,83 +299,6 @@ library UniswapV2OracleLibrary {
 
 
 /**
- * @title Ownable
- * @dev The Ownable contract has an owner address, and provides basic authorization control
- * functions, this simplifies the implementation of "user permissions".
- */
-contract Ownable {
-  address private _owner;
-
-  event OwnershipRenounced(address indexed previousOwner);
-  
-  event OwnershipTransferred(
-    address indexed previousOwner,
-    address indexed newOwner
-  );
-
-
-  /**
-   * @dev The Ownable constructor sets the original `owner` of the contract to the sender
-   * account.
-   */
-  constructor() public {
-    _owner = msg.sender;
-  }
-
-  /**
-   * @return the address of the owner.
-   */
-  function owner() public view returns(address) {
-    return _owner;
-  }
-
-  /**
-   * @dev Throws if called by any account other than the owner.
-   */
-  modifier onlyOwner() {
-    require(isOwner());
-    _;
-  }
-
-  /**
-   * @return true if `msg.sender` is the owner of the contract.
-   */
-  function isOwner() public view returns(bool) {
-    return msg.sender == _owner;
-  }
-
-  /**
-   * @dev Allows the current owner to relinquish control of the contract.
-   * @notice Renouncing to ownership will leave the contract without an owner.
-   * It will not be possible to call the functions with the `onlyOwner`
-   * modifier anymore.
-   */
-  function renounceOwnership() public onlyOwner {
-    emit OwnershipRenounced(_owner);
-    _owner = address(0);
-  }
-
-  /**
-   * @dev Allows the current owner to transfer control of the contract to a newOwner.
-   * @param newOwner The address to transfer ownership to.
-   */
-  function transferOwnership(address newOwner) public onlyOwner {
-    _transferOwnership(newOwner);
-  }
-
-  /**
-   * @dev Transfers control of the contract to a newOwner.
-   * @param newOwner The address to transfer ownership to.
-   */
-  function _transferOwnership(address newOwner) internal {
-    require(newOwner != address(0));
-    emit OwnershipTransferred(_owner, newOwner);
-    _owner = newOwner;
-  }
-}
-
-
-/**
  * @title DITTO price Oracle
  *      This Oracle calculates the average USD price of DITTO based on the BNB-DITTO and USDC-BNB pools.
  *      NOTE: This might need to be modified based on the actual BSC mainnet listings and available pools
@@ -403,19 +309,19 @@ contract MarketOracle is IOracle, Ownable {
     uint private dittoBnbPrice0CumulativeLast;
     uint private dittoBnbPrice1CumulativeLast;
     uint32 private dittoBnbBlockTimestampLast;
-    
+
     uint private usdcBnbPrice0CumulativeLast;
     uint private usdcBnbPrice1CumulativeLast;
     uint32 private usdcBnbBlockTimestampLast;
-    
+
     address private constant _wbnb = 0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA; // PLACEHOLDER! Update for BSC environment
     address private constant _usdc = 0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA; // PLACEHOLDER! Update for BSC environment
 
     IUniswapV2Pair private _ditto_bnb;
     IUniswapV2Pair private _usdc_bnb;
-    
+
     address public controller;
-    
+
     modifier onlyControllerOrOwner {
         require(msg.sender == controller || msg.sender == owner());
         _;
@@ -426,23 +332,23 @@ contract MarketOracle is IOracle, Ownable {
         address __ditto_bnb,   // Address of the DITTO-Bnb pair on Pancakeswap
         address __usdc_bnb   // Address of the USDC-Bnb on Pancakeswap
         ) public {
-        
+
         controller = _controller;
 
         _ditto_bnb = IUniswapV2Pair(__ditto_bnb);
         _usdc_bnb = IUniswapV2Pair(__usdc_bnb);
-        
+
         uint112 _dummy1;
         uint112 _dummy2;
 
         dittoBnbPrice0CumulativeLast = _ditto_bnb.price0CumulativeLast();
         dittoBnbPrice1CumulativeLast = _ditto_bnb.price1CumulativeLast();
-        
+
         (_dummy1, _dummy2, dittoBnbBlockTimestampLast) = _ditto_bnb.getReserves();
-        
+
         usdcBnbPrice0CumulativeLast = _usdc_bnb.price0CumulativeLast();
         usdcBnbPrice1CumulativeLast = _usdc_bnb.price1CumulativeLast();
-        
+
         (_dummy1, _dummy2, usdcBnbBlockTimestampLast) = _usdc_bnb.getReserves();
     }
 
@@ -450,50 +356,49 @@ contract MarketOracle is IOracle, Ownable {
     function getDittoBnbRate() public view returns (uint256, uint256, uint32, uint256) {
         (uint price0Cumulative, uint price1Cumulative, uint32 _blockTimestamp) =
             UniswapV2OracleLibrary.currentCumulativePrices(address(_ditto_bnb));
-            
+
         FixedPoint.uq112x112 memory dittoBnbAverage = FixedPoint.uq112x112(uint224(1e9 * (price0Cumulative - dittoBnbPrice0CumulativeLast) / (_blockTimestamp - dittoBnbBlockTimestampLast)));
-        
+
         return (price0Cumulative, price1Cumulative, _blockTimestamp, dittoBnbAverage.mul(1).decode144());
     }
-    
+
     // Get the average price of 1 USD in the smallest BNB unit (18 decimals)
     function getUsdcBnbRate() public view returns (uint256, uint256, uint32, uint256) {
         (uint price0Cumulative, uint price1Cumulative, uint32 _blockTimestamp) =
             UniswapV2OracleLibrary.currentCumulativePrices(address(_usdc_bnb));
-            
+
         FixedPoint.uq112x112 memory usdcBnbAverage = FixedPoint.uq112x112(uint224(1e6 * (price0Cumulative - usdcBnbPrice0CumulativeLast) / (_blockTimestamp - usdcBnbBlockTimestampLast)));
-            
+
         return (price0Cumulative, price1Cumulative, _blockTimestamp, usdcBnbAverage.mul(1).decode144());
     }
 
     // Update "last" state variables to current values
    function update() external onlyControllerOrOwner {
-        
+
         uint dittoBnbAverage;
         uint usdcBnbAverage;
-        
+
         (dittoBnbPrice0CumulativeLast, dittoBnbPrice1CumulativeLast, dittoBnbBlockTimestampLast, dittoBnbAverage) = getDittoBnbRate();
         (usdcBnbPrice0CumulativeLast, usdcBnbPrice1CumulativeLast, usdcBnbBlockTimestampLast, usdcBnbAverage) = getUsdcBnbRate();
     }
 
     // Return the average price since last update
     function getData() external view returns (uint256) {
-        
+
         uint _price0CumulativeLast;
         uint _price1CumulativeLast;
         uint32 _blockTimestampLast;
-        
+
         uint dittoBnbAverage;
 
         (_price0CumulativeLast, _price1CumulativeLast, _blockTimestampLast, dittoBnbAverage) = getDittoBnbRate();
-        
+
         uint usdcBnbAverage;
-        
+
          (_price0CumulativeLast, _price1CumulativeLast, _blockTimestampLast, usdcBnbAverage) = getUsdcBnbRate();
-         
+
         uint answer = (dittoBnbAverage * 1e18) / usdcBnbAverage;
-        
+
         return (answer);
     }
 }
-
