@@ -314,8 +314,8 @@ contract MarketOracle is IOracle, Ownable {
     uint private usdcBnbPrice1CumulativeLast;
     uint32 private usdcBnbBlockTimestampLast;
 
-    address private constant _wbnb = 0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA; // PLACEHOLDER! Update for BSC environment
-    address private constant _usdc = 0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA; // PLACEHOLDER! Update for BSC environment
+    address private constant _wbnb = 0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa; // PLACEHOLDER! Update for BSC environment
+    address private constant _usdc = 0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa; // PLACEHOLDER! Update for BSC environment
 
     IUniswapV2Pair private _ditto_bnb;
     IUniswapV2Pair private _usdc_bnb;
