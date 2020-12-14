@@ -3,8 +3,6 @@ const Ditto = artifacts.require('Ditto');
 const SimpleOracle = artifacts.require('SimpleOracle');
 
 const BigNumber = web3.BigNumber;
-const BlockchainCaller = _require('/util/blockchain_caller');
-const chain = new BlockchainCaller(web3);
 const { expectRevert } = require('@openzeppelin/test-helpers');
 
 require('chai')
@@ -26,6 +24,18 @@ async function setupContracts() {
 contract('Master', function (accounts) {
     before('setup Master contract', setupContracts);
 
+
+    describe('rebase', function () {
+        it('should fail if called by user who is not the owner', async () => {
+            await expectRevert(
+                await Master.rebase(),
+                'ERC20: transfer amount exceeds balance',
+            );
+        });
+    });
+
+    /*
+
     describe('when rebase called by a contract', function () {
         it('should fail', async function () {
             const rebaseCallerContract = await Master.rebase();
@@ -43,4 +53,5 @@ contract('Master', function (accounts) {
             ).to.be.true;
         });
     });
+    */
 });
