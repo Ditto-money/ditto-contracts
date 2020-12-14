@@ -23,8 +23,8 @@ module.exports = function (deployer) {
         await masterInstance.setMarketOracle(oracleAddress.address);
 
         // set master address on DittoERC20 contract
-        let masterAdress = await deployer.deploy(Master, dittoAddress);
+        let masterAdress = await deployer.deploy(Master, dittoAddress.address);
         dittoInstace = await Ditto.deployed();
-        await dittoInstace.SetMaster(masterAdress.address);
+        await dittoInstace.setMaster(masterAdress.address);
     })
 };
