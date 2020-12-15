@@ -47,4 +47,11 @@ contract('Ditto', ([alice, bob, carol]) => {
         );
     });
 
+    it('should revert if setMaster is called and caller is not the master', async () => {
+        await expectRevert(
+            this.ditto.setMaster(web3.utils.randomHex(20), { from: bob }),
+            'revert'
+        );
+    });
+
   });
