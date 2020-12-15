@@ -42,6 +42,7 @@
     "eslint-plugin-truffle": "^0.3.1",
     "hardhat": "^2.0.5",
     "solidity-coverage": "^0.7.13",
-    "super-web3-provider": "0.0.21"
+    "super-web3-provider": "0.0.21",
+    "token-test-suite": "^0.1.1"
   }
 }
