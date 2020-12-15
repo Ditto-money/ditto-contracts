@@ -8,6 +8,8 @@ contract('Ditto', ([alice, bob, carol]) => {
         this.ditto = await Ditto.new({ from: alice });
     });
 
+    const expectedSupply  = new BN("1750000000000000");
+
     it('should have correct name and symbol and decimal', async () => {
         const name = await this.ditto.name();
         const symbol = await this.ditto.symbol();
@@ -19,12 +21,10 @@ contract('Ditto', ([alice, bob, carol]) => {
 
     it('should have correct initial supply', async () => {
         const totalSupply = await this.ditto.totalSupply();
-        const expectedSupply  = new BN("1750000000000000");
         assert(totalSupply.eq(expectedSupply));
 
-        // const aliceBal = await this.ditto.balanceOf(carol);
-
-        // assert.equal(aliceBal.valueOf(), totalSupply.valueOf());
+        const creatorBal = await this.ditto.balanceOf(alice);
+        assert(creatorBal.eq(totalSupply));
     });
 
     it('should perform token transfers properly', async () => {
@@ -33,7 +33,7 @@ contract('Ditto', ([alice, bob, carol]) => {
         assert.equal(carolBal.valueOf(), '100');
     });
 
-    it('should fail if you try to do bad transfers', async () => {
+    it('should fail if user tries to do bad transfers', async () => {
         await expectRevert(
             this.ditto.transfer(carol, '1', { from: bob }),
             'revert'
