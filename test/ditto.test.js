@@ -39,4 +39,12 @@ contract('Ditto', ([alice, bob, carol]) => {
             'revert'
         );
     });
+
+    it('should revert if rebase is called and caller is not the master', async () => {
+        await expectRevert(
+            this.ditto.rebase('0', '0', { from: bob }),
+            'revert'
+        );
+    });
+
   });

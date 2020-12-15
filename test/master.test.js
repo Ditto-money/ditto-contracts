@@ -5,7 +5,7 @@ const SimpleOracle = artifacts.require('SimpleOracle');
 const BigNumber = web3.BigNumber;
 const BN = web3.utils.BN;
 
-const valueStart = web3.utils.toBN("1e18")
+const valueStart = web3.utils.toBN("1000000000000000000")
 const { expectRevert } = require('@openzeppelin/test-helpers');
 
 require('chai')
@@ -14,7 +14,6 @@ require('chai')
 
 contract('Master', function (accounts) {
 
-    const initialSupply  = new BN("1750000000000000");
     let ditto, master, oracle;
 
     beforeEach(async () => {
@@ -38,22 +37,41 @@ contract('Master', function (accounts) {
         });
 
         it('should not change supply if Oracle price is $1', async () => {
-            await master.setRebaseLocked(false);
+
+            const supplyBeforeRebase = await ditto.totalSupply();
+            const rebaseValues = await master.getRebaseValues();
+     
             await master.rebase();
 
             const supplyAfterRebase = await ditto.totalSupply();
 
-            assert(supplyAfterRebase.eq(initialSupply));
+            assert(supplyAfterRebase.eq(supplyBeforeRebase));
         });
 
-        it('should adjust supply by 2% if Oracle price is $1.10', async () => {
-            await master.setRebaseLocked(false);
-            await oracle.setData(web3.utils.toBN("11e17"));
+        it('should adjust supply by +2% if Oracle price is $1.10', async () => {
+
+            const supplyBeforeRebase = await ditto.totalSupply();
+            const rebaseValues = await master.getRebaseValues();
+
+            await oracle.setData(web3.utils.toBN("1100000000000000000"));
             await master.rebase();
 
             const supplyAfterRebase = await ditto.totalSupply();
 
-            assert(supplyAfterRebase.eq(initialSupply));
+            assert(supplyAfterRebase.eq(supplyBeforeRebase.mul(new BN('102')).div(new BN('100'))));
+        });
+
+        it('should adjust supply by -5% if Oracle price is $0.90', async () => {
+
+            const supplyBeforeRebase = await ditto.totalSupply();
+            const rebaseValues = await master.getRebaseValues();
+
+            await oracle.setData(web3.utils.toBN("900000000000000000"));
+            await master.rebase();
+
+            const supplyAfterRebase = await ditto.totalSupply();
+
+            assert(supplyAfterRebase.eq(supplyBeforeRebase.mul(new BN('95')).div(new BN('100'))));
         });
 
     });
