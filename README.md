@@ -10,10 +10,10 @@ Ditto money is an elastic supply token. The total supply of Ditto is not fixed, 
 
 The Ditto project is a fork of [Ampleforth](https://www.ampleforth.org/). It includes code from other cutting-edge elastic supply projects and several novel ideas. The original architecture has been simplified into two main contracts:
 
-1. [DittoToken](Ditto.sol) - ERC20 token that implements the rebase function.
-2. [DittoMaster](Master.sol) - Contains the rebase configuration and admin functionality.
+1. [DittoToken](contracts/Ditto.sol) - ERC20 token that implements the rebase function.
+2. [DittoMaster](contracts/Master.sol) - Contains the rebase configuration and admin functionality.
 
-The third necessary component is the price Oracle. The [MarketOracle](MarketOracle.sol) smart contract provides the functionality for calculating an average price using the Uniswap TWAP Oracle interface.
+The third necessary component is the price Oracle. The [MarketOracle](contracts/MarketOracle.sol) smart contract provides the functionality for calculating an average price using the Uniswap TWAP Oracle interface.
 
 ## Configuration
 
