@@ -16,7 +16,7 @@ contract('Ditto', function (accounts) {
   const name = 'Ditto';
   const symbol = 'DITTO';
 
-  const initialSupply = new BN(1750000000000000);
+  const initialSupply = new BN(2000000000000000);
 
   beforeEach(async function () {
     this.token = await Ditto.new();
@@ -31,7 +31,7 @@ contract('Ditto', function (accounts) {
     expect(await this.token.symbol()).to.equal(symbol);
   });
 
-  it('has 9 decimals', async function () {
+  it('has 18 decimals', async function () {
     expect(await this.token.decimals()).to.be.bignumber.equal('9');
   });
 
