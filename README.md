@@ -51,10 +51,3 @@ The market oracle must be deployed last after the token has been listed on an AM
 
 The oracle calculates a rate for Ditto/USD based on a DITTO/BNB and BNB/USD pool, where "USD" is some kind of USD stable coin that must have high liquidity. O)n Binance Smart Chain, BUSD pools are most suited for this purpose.
 
-## Ditto on the BSC Testnet
-
-Testnet instances of the Ditto Money contracts are available on the BSC testnet. Let us know on Telegram if you want some testnet DITTO to play with.
-
-- [Ditto Token](https://testnet.bscscan.com/address/0xbf8C8eFD410414929eb63c62E2C28596c1AB7318)
-- [Ditto Master](https://testnet.bscscan.com/address/0xA121Fde07be72Dc9494FBa99bc84E48724a68820)
-
