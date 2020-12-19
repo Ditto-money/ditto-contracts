@@ -104,7 +104,7 @@ contract Master is Ownable {
     constructor(address _ditto) public {
         deviationThreshold = 5 * 10 ** (DECIMALS-2);
 
-        rebaseCooldown = 2 hours;
+        rebaseCooldown = 4 hours;
         lastRebaseTimestampSec = 0;
         epoch = 0;
         rebaseLocked = true;
