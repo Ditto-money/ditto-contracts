@@ -20,7 +20,7 @@ The third necessary component is the price Oracle. The [MarketOracle](contracts/
 Important rebase parameters are found in the master contract. Most of these values are set during construction or directly in the code.
 
 - `deviationThreshold`:  If the current exchange rate is within this fractional distance from the target price, no supply update is performed. By default this is set to 0.05.
-- `rebaseCooldown:` Minimum time that must pass between rebases, in seconds. The default value is 7,200.
+- `rebaseCooldown:` Minimum time that must pass between rebases, in seconds. The default value is 4 hours.
 
 ### Variable rebase lag
 
