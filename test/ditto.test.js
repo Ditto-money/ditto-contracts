@@ -31,7 +31,7 @@ contract('Ditto', function (accounts) {
     expect(await this.token.symbol()).to.equal(symbol);
   });
 
-  it('has 18 decimals', async function () {
+  it('has 9 decimals', async function () {
     expect(await this.token.decimals()).to.be.bignumber.equal('9');
   });
 
