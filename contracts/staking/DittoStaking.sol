@@ -10,23 +10,19 @@ import "./TokenPool.sol";
 
 
 /**
- * @title Multi Staking
- * @dev A smart-contract based mechanism to distribute tokens over time, based on the Ampleforth Geyser.
+ * @title DITTO Compound Staking Smart Contract - Pancakeswap version
+ * @dev A smart-contract to distribute DITTO over time and accumulates CAKE on behalf of stakers.
  *
  *      Distribution tokens are added to a locked pool in the contract and become unlocked over time
  *      according to a once-configurable unlock schedule. Once unlocked, they are available to be
  *      claimed by users.
  *
- *      A user may deposit tokens to accrue ownership share over the unlocked pool. This owner share
- *      is a function of the number of tokens deposited as well as the length of time deposited.
- *      Specifically, a user's share of the currently-unlocked pool equals their "deposit-seconds"
- *      divided by the global "deposit-seconds". This aligns the new token distribution with long
- *      term supporters of the project, addressing one of the major drawbacks of simple airdrops.
+ *      On unstaking, users reveive DITTO and CAKE based on the number of shares and seconds staked.
+ *      To incentivize staking over longer period of time users earn a multiplier on DITTO rewards
+ *      (this does not apply to CAKE rewards).
  *
- *      More background and motivation available at:
- *      https://github.com/ampleforth/RFCs/blob/master/RFCs/rfc-1.md
  */
-contract DittoStaking is IStaking, Ownable {
+contract DittoStaking is Ownable {
     using SafeMath for uint256;
 
     event Staked(address indexed user, uint256 amount, uint256 total, bytes data);
@@ -36,9 +32,16 @@ contract DittoStaking is IStaking, Ownable {
     // amount: Unlocked tokens, total: Total locked tokens
     event TokensUnlocked(uint256 amount, uint256 total);
 
-    TokenPool public _stakingPool;
     TokenPool public _unlockedPool;
     TokenPool public _lockedPool;
+    
+    IERC20 public stakingToken = IERC20(0x470BC451810B312BBb1256f96B0895D95eA659B1); // DITTO-BNB LP
+    
+    // Pancakeswap constants
+
+    IMasterChef private pcsMasterChef = IMasterChef(0x73feaa1eE314F8c655E354234017bE2193C9E24E);
+    IERC20 private cake = IERC20(0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82);
+    uint256 DITTO_BNB_PID = 44;
 
     //
     // Time-bonus params
@@ -92,18 +95,15 @@ contract DittoStaking is IStaking, Ownable {
     }
 
     UnlockSchedule[] public unlockSchedules;
-
+    
     /**
-     * @param stakingToken The token users deposit as stake.
-     * @param distributionToken The token users receive as they unstake.
      * @param maxUnlockSchedules Max number of unlock stages, to guard against hitting gas limit.
      * @param startBonus_ Starting time bonus, BONUS_DECIMALS fixed point.
      *                    e.g. 25% means user gets 25% of max distribution tokens.
      * @param bonusPeriodSec_ Length of time for bonus to increase linearly to max.
      * @param initialSharesPerToken Number of shares to mint per staking token on first stake.
      */
-    constructor(IERC20 stakingToken, IERC20 distributionToken, uint256 maxUnlockSchedules,
-                uint256 startBonus_, uint256 bonusPeriodSec_, uint256 initialSharesPerToken) public {
+    constructor(uint256 maxUnlockSchedules, uint256 startBonus_, uint256 bonusPeriodSec_, uint256 initialSharesPerToken) public {
         // The start bonus must be some fraction of the max. (i.e. <= 100%)
         require(startBonus_ <= 10**BONUS_DECIMALS, 'DittoStaking: start bonus too high');
         // If no period is desired, instead set startBonus = 100%
@@ -111,20 +111,18 @@ contract DittoStaking is IStaking, Ownable {
         require(bonusPeriodSec_ != 0, 'DittoStaking: bonus period is zero');
         require(initialSharesPerToken > 0, 'DittoStaking: initialSharesPerToken is zero');
 
-        _stakingPool = new TokenPool(stakingToken);
+        IERC20 distributionToken = IERC20(0x233d91A0713155003fc4DcE0AFa871b508B3B715); // DITTO
+        
         _unlockedPool = new TokenPool(distributionToken);
         _lockedPool = new TokenPool(distributionToken);
         startBonus = startBonus_;
         bonusPeriodSec = bonusPeriodSec_;
         _maxUnlockSchedules = maxUnlockSchedules;
         _initialSharesPerToken = initialSharesPerToken;
-    }
-
-    /**
-     * @return The token users deposit as stake.
-     */
-    function getStakingToken() public view returns (IERC20) {
-        return _stakingPool.token();
+        
+        // MasterChef: Unlimited approval
+        
+        stakingToken.approve(address(pcsMasterChef), uint256(-1));
     }
 
     /**
@@ -180,15 +178,16 @@ contract DittoStaking is IStaking, Ownable {
 
         Stake memory newStake = Stake(mintedStakingShares, now);
         _userStakes[beneficiary].push(newStake);
-
         // 2. Global Accounting
         totalStakingShares = totalStakingShares.add(mintedStakingShares);
         // Already set in updateAccounting()
         // _lastAccountingTimestampSec = now;
 
         // interactions
-        require(_stakingPool.token().transferFrom(staker, address(_stakingPool), amount),
+        require(stakingToken.transferFrom(staker, address(this), amount),
             'DittoStaking: transfer into staking pool failed');
+            
+        pcsMasterChef.deposit(DITTO_BNB_PID, amount);
 
         emit Staked(beneficiary, amount, totalStakedFor(beneficiary), "");
     }
@@ -226,7 +225,7 @@ contract DittoStaking is IStaking, Ownable {
             'DittoStaking: unstake amount is greater than total user stakes');
         uint256 stakingSharesToBurn = totalStakingShares.mul(amount).div(totalStaked());
         require(stakingSharesToBurn > 0, 'DittoStaking: Unable to unstake amount this small');
-
+    
         // 1. User Accounting
         UserTotals storage totals = _userTotals[msg.sender];
         Stake[] storage accountStakes = _userStakes[msg.sender];
@@ -235,6 +234,12 @@ contract DittoStaking is IStaking, Ownable {
         uint256 stakingShareSecondsToBurn = 0;
         uint256 sharesLeftToBurn = stakingSharesToBurn;
         uint256 rewardAmount = 0;
+        uint256 cakeRewardAmount = 0;
+        
+        // Withdraw the requested shares from MasterChef
+        pcsMasterChef.withdraw(DITTO_BNB_PID, amount);
+        uint256 cakeBalance = cake.balanceOf(address(this));
+        
         while (sharesLeftToBurn > 0) {
             Stake storage lastStake = accountStakes[accountStakes.length - 1];
             uint256 stakeTimeSec = now.sub(lastStake.timestampSec);
@@ -255,6 +260,10 @@ contract DittoStaking is IStaking, Ownable {
                 sharesLeftToBurn = 0;
             }
         }
+        
+        // Calculate proportionate CAKE reward amount
+        cakeRewardAmount = cakeBalance.mul(stakingShareSecondsToBurn).div(_totalStakingShareSeconds);
+        
         totals.stakingShareSeconds = totals.stakingShareSeconds.sub(stakingShareSecondsToBurn);
         totals.stakingShares = totals.stakingShares.sub(stakingSharesToBurn);
         // Already set in updateAccounting
@@ -265,12 +274,15 @@ contract DittoStaking is IStaking, Ownable {
         totalStakingShares = totalStakingShares.sub(stakingSharesToBurn);
         // Already set in updateAccounting
         // _lastAccountingTimestampSec = now;
-
+        
         // interactions
-        require(_stakingPool.transfer(msg.sender, amount),
+        require(stakingToken.transfer(msg.sender, amount),
             'DittoStaking: transfer out of staking pool failed');
+        
         require(_unlockedPool.transfer(msg.sender, rewardAmount),
             'DittoStaking: transfer out of unlocked pool failed');
+        require(cake.transfer(msg.sender, cakeRewardAmount),
+            'DittoStaking: transfer of CAKE rewards failed');
 
         emit Unstaked(msg.sender, amount, totalStakedFor(msg.sender), "");
         emit TokensClaimed(msg.sender, rewardAmount);
@@ -329,16 +341,9 @@ contract DittoStaking is IStaking, Ownable {
      * @return The total number of deposit tokens staked globally, by all users.
      */
     function totalStaked() public view returns (uint256) {
-        return _stakingPool.balance();
-    }
-
-    /**
-     * @dev Note that this application has a staking token as well as a distribution token, which
-     * may be different. This function is required by EIP-900.
-     * @return The deposit token used for staking.
-     */
-    function token() external view returns (address) {
-        return address(getStakingToken());
+        IMasterChef.UserInfo memory userInfo = pcsMasterChef.userInfo(DITTO_BNB_PID, address(this));
+        
+        return userInfo.amount;
     }
 
     /**
@@ -502,16 +507,42 @@ contract DittoStaking is IStaking, Ownable {
         return sharesToUnlock;
     }
 
+    function pendingCakeByUser(address _user) public view returns (uint256) {
+        uint256 pendinCake = pcsMasterChef.pendingCake(DITTO_BNB_PID, address(this));
+        uint256 cakeBalance = cake.balanceOf(address(this));
+        uint256 totalCakeRewardsAvailable = pendinCake.add(cakeBalance);
+            
+        UserTotals storage totals = _userTotals[_user];
+        
+        uint256 userStakingShareSeconds =
+            now
+            .sub(totals.lastAccountingTimestampSec)
+            .mul(totals.stakingShares);
+        
+        // Calculate CAKE reward amount
+        
+        return totalCakeRewardsAvailable.mul(userStakingShareSeconds).div(_totalStakingShareSeconds);
+    }
+
     /**
-     * @dev Lets the owner rescue funds air-dropped to the staking pool.
+     * @dev Lets the owner rescue funds air-dropped to this contract.
      * @param tokenToRescue Address of the token to be rescued.
      * @param to Address to which the rescued funds are to be sent.
      * @param amount Amount of tokens to be rescued.
      * @return Transfer success.
      */
-    function rescueFundsFromStakingPool(address tokenToRescue, address to, uint256 amount)
+    function rescueFunds(address tokenToRescue, address to, uint256 amount)
         public onlyOwner returns (bool) {
 
-        return _stakingPool.rescueFunds(tokenToRescue, to, amount);
+        return IERC20(tokenToRescue).transfer(to, amount);
+    }
+    
+    /**
+     * @dev Withdraws the LP tokens from Pancakeswap MasterChef without caring about rewards.
+     * Can be called buy admin in case of unexpected issues with MasterChef.
+     */
+    function emergencyWithdraw() external onlyOwner {
+        pcsMasterChef.emergencyWithdraw(DITTO_BNB_PID);
+    
     }
 }
