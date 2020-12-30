@@ -5,7 +5,6 @@ pragma solidity >=0.5.17 <0.8.0;
 import "../mocks/IERC20.sol";
 import "../mocks/Ownable.sol";
 import "../lib/SafeMath.sol";
-import "./IStaking.sol";
 import "./TokenPool.sol";
 
 
