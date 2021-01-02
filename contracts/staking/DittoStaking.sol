@@ -1,11 +1,226 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.5.17 <0.8.0;
+pragma solidity 0.5.17;
+pragma experimental ABIEncoderV2;
 
-import "../mocks/IERC20.sol";
-import "../mocks/Ownable.sol";
-import "../lib/SafeMath.sol";
-import "./TokenPool.sol";
+/**
+ * @title Ownable
+ * @dev The Ownable contract has an owner address, and provides basic authorization control
+ * functions, this simplifies the implementation of "user permissions".
+ */
+contract Ownable {
+  address private _owner;
+
+  event OwnershipRenounced(address indexed previousOwner);
+
+  event OwnershipTransferred(
+    address indexed previousOwner,
+    address indexed newOwner
+  );
+
+
+  /**
+   * @dev The Ownable constructor sets the original `owner` of the contract to the sender
+   * account.
+   */
+  constructor() public {
+    _owner = msg.sender;
+  }
+
+  /**
+   * @return the address of the owner.
+   */
+  function owner() public view returns(address) {
+    return _owner;
+  }
+
+  /**
+   * @dev Throws if called by any account other than the owner.
+   */
+  modifier onlyOwner() {
+    require(isOwner());
+    _;
+  }
+
+  /**
+   * @return true if `msg.sender` is the owner of the contract.
+   */
+  function isOwner() public view returns(bool) {
+    return msg.sender == _owner;
+  }
+
+  /**
+   * @dev Allows the current owner to relinquish control of the contract.
+   * @notice Renouncing to ownership will leave the contract without an owner.
+   * It will not be possible to call the functions with the `onlyOwner`
+   * modifier anymore.
+   */
+  function renounceOwnership() public onlyOwner {
+    emit OwnershipRenounced(_owner);
+    _owner = address(0);
+  }
+
+  /**
+   * @dev Allows the current owner to transfer control of the contract to a newOwner.
+   * @param newOwner The address to transfer ownership to.
+   */
+  function transferOwnership(address newOwner) public onlyOwner {
+    _transferOwnership(newOwner);
+  }
+
+  /**
+   * @dev Transfers control of the contract to a newOwner.
+   * @param newOwner The address to transfer ownership to.
+   */
+  function _transferOwnership(address newOwner) internal {
+    require(newOwner != address(0));
+    emit OwnershipTransferred(_owner, newOwner);
+    _owner = newOwner;
+  }
+}
+
+/**
+ * @title SafeMath
+ * @dev Math operations with safety checks that revert on error
+ */
+library SafeMath {
+
+  /**
+  * @dev Multiplies two numbers, reverts on overflow.
+  */
+  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
+    // benefit is lost if 'b' is also tested.
+    // See: https://github.com/OpenZeppelin/openzeppelin-solidity/pull/522
+    if (a == 0) {
+      return 0;
+    }
+
+    uint256 c = a * b;
+    require(c / a == b);
+
+    return c;
+  }
+
+  /**
+  * @dev Integer division of two numbers truncating the quotient, reverts on division by zero.
+  */
+  function div(uint256 a, uint256 b) internal pure returns (uint256) {
+    require(b > 0); // Solidity only automatically asserts when dividing by 0
+    uint256 c = a / b;
+    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
+
+    return c;
+  }
+
+  /**
+  * @dev Subtracts two numbers, reverts on overflow (i.e. if subtrahend is greater than minuend).
+  */
+  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+    require(b <= a);
+    uint256 c = a - b;
+
+    return c;
+  }
+
+  /**
+  * @dev Adds two numbers, reverts on overflow.
+  */
+  function add(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a + b;
+    require(c >= a);
+
+    return c;
+  }
+
+  /**
+  * @dev Divides two numbers and returns the remainder (unsigned integer modulo),
+  * reverts when dividing by zero.
+  */
+  function mod(uint256 a, uint256 b) internal pure returns (uint256) {
+    require(b != 0);
+    return a % b;
+  }
+}
+
+interface IERC20 {
+  function totalSupply() external view returns (uint256);
+
+  function balanceOf(address who) external view returns (uint256);
+
+  function allowance(address owner, address spender)
+    external view returns (uint256);
+
+  function transfer(address to, uint256 value) external returns (bool);
+
+  function approve(address spender, uint256 value)
+    external returns (bool);
+
+  function transferFrom(address from, address to, uint256 value)
+    external returns (bool);
+}
+
+/**
+ * @title A simple holder of tokens.
+ * This is a simple contract to hold tokens. It's useful in the case where a separate contract
+ * needs to hold multiple distinct pools of the same token.
+ */
+contract TokenPool is Ownable {
+    IERC20 public token;
+
+    constructor(IERC20 _token) public {
+        token = _token;
+    }
+
+    function balance() public view returns (uint256) {
+        return token.balanceOf(address(this));
+    }
+
+    function transfer(address to, uint256 value) external onlyOwner returns (bool) {
+        return token.transfer(to, value);
+    }
+
+    function rescueFunds(address tokenToRescue, address to, uint256 amount) external onlyOwner returns (bool) {
+        require(address(token) != tokenToRescue, 'TokenPool: Cannot claim token held by the contract');
+
+        return IERC20(tokenToRescue).transfer(to, amount);
+    }
+}
+
+
+// MasterChef public interface
+
+interface IMasterChef  {
+
+    // View function to see pending CAKEs on frontend.
+    function pendingCake(uint256 _pid, address _user) external view returns (uint256);
+
+    // Update reward variables of the given pool to be up-to-date.
+    function updatePool(uint256 _pid) external;
+
+    // Deposit LP tokens to MasterChef for CAKE allocation.
+    function deposit(uint256 _pid, uint256 _amount) external;
+
+    // Withdraw LP tokens from MasterChef.
+    function withdraw(uint256 _pid, uint256 _amount) external;
+
+    // Stake CAKE tokens to MasterChef
+    function enterStaking(uint256 _amount) external;
+
+    // Withdraw CAKE tokens from STAKING.
+    function leaveStaking(uint256 _amount) external;
+
+    // Withdraw without caring about rewards. EMERGENCY ONLY.
+    function emergencyWithdraw(uint256 _pid) external;
+    
+   struct UserInfo {
+        uint256 amount;     // How many LP tokens the user has provided.
+        uint256 rewardDebt;    
+   }
+   
+    // User info view
+    function userInfo(uint256 _pid, address _user) external view returns (UserInfo memory);
+}
 
 
 /**
@@ -21,6 +236,7 @@ import "./TokenPool.sol";
  *      (this does not apply to CAKE rewards).
  *
  */
+
 contract DittoStaking is Ownable {
     using SafeMath for uint256;
 
@@ -94,7 +310,7 @@ contract DittoStaking is Ownable {
     }
 
     UnlockSchedule[] public unlockSchedules;
-    
+
     /**
      * @param maxUnlockSchedules Max number of unlock stages, to guard against hitting gas limit.
      * @param startBonus_ Starting time bonus, BONUS_DECIMALS fixed point.
@@ -167,11 +383,12 @@ contract DittoStaking is Ownable {
             ? totalStakingShares.mul(amount).div(totalStaked())
             : amount.mul(_initialSharesPerToken);
         require(mintedStakingShares > 0, 'DittoStaking: Stake amount is too small');
-
+        
         updateAccounting();
-
+        
         // 1. User Accounting
         UserTotals storage totals = _userTotals[beneficiary];
+        
         totals.stakingShares = totals.stakingShares.add(mintedStakingShares);
         totals.lastAccountingTimestampSec = now;
 
@@ -507,20 +724,35 @@ contract DittoStaking is Ownable {
     }
 
     function pendingCakeByUser(address _user) public view returns (uint256) {
-        uint256 pendinCake = pcsMasterChef.pendingCake(DITTO_BNB_PID, address(this));
+        uint256 pendingCake = pcsMasterChef.pendingCake(DITTO_BNB_PID, address(this));
         uint256 cakeBalance = cake.balanceOf(address(this));
-        uint256 totalCakeRewardsAvailable = pendinCake.add(cakeBalance);
+        uint256 totalCakeRewardsAvailable = pendingCake.add(cakeBalance);
+ 
+        if(_totalStakingShareSeconds == 0) {
+            return 0;
+        }
+        
+        uint256 newStakingShareSeconds =
+            now
+            .sub(_lastAccountingTimestampSec)
+            .mul(totalStakingShares);
+        
+        uint256 totalStakingShareSeconds = _totalStakingShareSeconds.add(newStakingShareSeconds);
             
         UserTotals storage totals = _userTotals[_user];
         
-        uint256 userStakingShareSeconds =
+        uint256 newUserStakingShareSeconds =
             now
             .sub(totals.lastAccountingTimestampSec)
             .mul(totals.stakingShares);
+            
+        uint256 totalUserStakingShareSeconds =
+            totals.stakingShareSeconds
+            .add(newUserStakingShareSeconds);
         
         // Calculate CAKE reward amount
-        
-        return totalCakeRewardsAvailable.mul(userStakingShareSeconds).div(_totalStakingShareSeconds);
+
+        return totalCakeRewardsAvailable.mul(totalUserStakingShareSeconds).div(totalStakingShareSeconds);
     }
 
     /**
@@ -534,14 +766,5 @@ contract DittoStaking is Ownable {
         public onlyOwner returns (bool) {
 
         return IERC20(tokenToRescue).transfer(to, amount);
-    }
-    
-    /**
-     * @dev Withdraws the LP tokens from Pancakeswap MasterChef without caring about rewards.
-     * Can be called buy admin in case of unexpected issues with MasterChef.
-     */
-    function emergencyWithdraw() external onlyOwner {
-        pcsMasterChef.emergencyWithdraw(DITTO_BNB_PID);
-    
     }
 }
