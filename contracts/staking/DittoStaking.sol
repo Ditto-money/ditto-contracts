@@ -247,8 +247,8 @@ contract DittoStaking is Ownable {
     // amount: Unlocked tokens, total: Total locked tokens
     event TokensUnlocked(uint256 amount, uint256 total);
 
-    TokenPool public _unlockedPool;
-    TokenPool public _lockedPool;
+    TokenPool private _unlockedPool;
+    TokenPool private _lockedPool;
     
     IERC20 public stakingToken = IERC20(0x470BC451810B312BBb1256f96B0895D95eA659B1); // DITTO-BNB LP
     
@@ -293,7 +293,7 @@ contract DittoStaking is Ownable {
     }
 
     // Aggregated staking values per user
-    mapping(address => UserTotals) private _userTotals;
+    mapping(address => UserTotals) public userTotals;
 
     // The collection of stakes for each user. Ordered by timestamp, earliest to latest.
     mapping(address => Stake[]) private _userStakes;
@@ -387,7 +387,7 @@ contract DittoStaking is Ownable {
         updateAccounting();
         
         // 1. User Accounting
-        UserTotals storage totals = _userTotals[beneficiary];
+        UserTotals storage totals = userTotals[beneficiary];
         
         totals.stakingShares = totals.stakingShares.add(mintedStakingShares);
         totals.lastAccountingTimestampSec = now;
@@ -443,7 +443,7 @@ contract DittoStaking is Ownable {
         require(stakingSharesToBurn > 0, 'DittoStaking: Unable to unstake amount this small');
     
         // 1. User Accounting
-        UserTotals storage totals = _userTotals[msg.sender];
+        UserTotals storage totals = userTotals[msg.sender];
         Stake[] storage accountStakes = _userStakes[msg.sender];
 
         // Redeem from most recent stake and go backwards in time.
@@ -550,7 +550,7 @@ contract DittoStaking is Ownable {
      */
     function totalStakedFor(address addr) public view returns (uint256) {
         return totalStakingShares > 0 ?
-            totalStaked().mul(_userTotals[addr].stakingShares).div(totalStakingShares) : 0;
+            totalStaked().mul(userTotals[addr].stakingShares).div(totalStakingShares) : 0;
     }
 
     /**
@@ -586,7 +586,7 @@ contract DittoStaking is Ownable {
         _lastAccountingTimestampSec = now;
 
         // User Accounting
-        UserTotals storage totals = _userTotals[msg.sender];
+        UserTotals storage totals = userTotals[msg.sender];
         uint256 newUserStakingShareSeconds =
             now
             .sub(totals.lastAccountingTimestampSec)
@@ -739,7 +739,7 @@ contract DittoStaking is Ownable {
         
         uint256 totalStakingShareSeconds = _totalStakingShareSeconds.add(newStakingShareSeconds);
             
-        UserTotals storage totals = _userTotals[_user];
+        UserTotals storage totals = userTotals[_user];
         
         uint256 newUserStakingShareSeconds =
             now
