@@ -1,5 +1,5 @@
-// SP-License-upgradeable-Identifier: MIT
-pragma solidity ^0.6.11;
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.7.3;
 
 
 import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/BEP20.sol"; 
@@ -8,7 +8,7 @@ import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/SafeBEP20.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/cryptography/MerkleProofUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
-import "interfaces/IMerkleDistributor.sol";
+import "../interfaces/IMerkleDistributor.sol";
 
 contract MerkleDistributor is Initializable, IMerkleDistributor {
     address public token;
