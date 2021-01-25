@@ -17,11 +17,9 @@ contract MerkleDistributorBEP20 is Initializable, IMerkleDistributor {
 
     // This is a packed array of booleans.
     mapping(uint256 => uint256) internal claimedBitMap;
-
-    // Set contract manager
-    address payable public manager;
     
     constructor(bytes32 _merkleRoot, uint256 _withdrawBlock, address _withdrawAddress) public {
+        manager = _withdrawAddress;
         merkleRoot = _merkleRoot;
         withdrawBlock = _withdrawBlock;
         withdrawAddress = _withdrawAddress;
@@ -60,7 +58,7 @@ contract MerkleDistributorBEP20 is Initializable, IMerkleDistributor {
 
         // Mark it claimed and send the token.
         _setClaimed(index);
-        require(IBEP20.transfer(account, amount), "Ditto BEP20  MerkleDistributor: Transfer failed.");
+        account.transfer(amount);
 
         emit Claimed(index, account, amount);
     }
@@ -70,9 +68,6 @@ contract MerkleDistributorBEP20 is Initializable, IMerkleDistributor {
             block.number >= withdrawBlock,
             'DittoClaimDistributor: Withdraw failed, cannot claim until after validBlocks diff'
         );
-        require(
-            IBEP20.transfer(withdrawAddress, IBEP20.balanceOf(address(this))),
-            'DittoClaimDistributor: Withdraw transfer failed.'
-        );
+        whithdrawAddress.transfer(address(this).balance);
     }
 }
