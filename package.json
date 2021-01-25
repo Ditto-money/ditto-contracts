@@ -30,8 +30,11 @@
   "homepage": "https://github.com/Ditto-money/ditto-contracts#readme",
   "dependencies": {
     "@openzeppelin/contracts": "^3.3.0",
+    "@openzeppelin/contracts-upgradeable": "^3.3.0",
     "@openzeppelin/test-helpers": "^0.5.6",
+    "@pancakeswap/pancake-swap-lib": "^0.0.4",
     "@truffle/hdwallet-provider": "^1.1.1",
+    "@uniswap/lib": "^4.0.1-alpha",
     "chai-bignumber": "^3.0.0",
     "truffle": "^5.1.58",
     "truffle-flattener": "^1.4.4",
