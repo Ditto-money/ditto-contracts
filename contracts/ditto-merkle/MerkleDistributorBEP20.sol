@@ -10,8 +10,7 @@ import "@openzeppelin/contracts-upgradeable/cryptography/MerkleProofUpgradeable.
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "../interfaces/IMerkleDistributor.sol";
 
-contract MerkleDistributor is Initializable, IMerkleDistributor {
-    address public token;
+contract MerkleDistributorBEP20 is Initializable, IMerkleDistributor {
     bytes32 public merkleRoot;
     uint256 public withdrawBlock;
     address public withdrawAddress;
@@ -19,11 +18,18 @@ contract MerkleDistributor is Initializable, IMerkleDistributor {
     // This is a packed array of booleans.
     mapping(uint256 => uint256) internal claimedBitMap;
 
-    constructor(address _token, bytes32 _merkleRoot, uint256 _withdrawBlock, address _withdrawAddress) public {
-        token = _token;
+    // Set contract manager
+    address payable public manager;
+    
+    constructor(bytes32 _merkleRoot, uint256 _withdrawBlock, address _withdrawAddress) public {
         merkleRoot = _merkleRoot;
         withdrawBlock = _withdrawBlock;
         withdrawAddress = _withdrawAddress;
+    }
+
+    modifier onlyManager() {
+        require(msg.sender == manager, "caller is not the manager");
+        _;
     }
 
     function isClaimed(uint256 index) public override view returns (bool) {
@@ -46,26 +52,26 @@ contract MerkleDistributor is Initializable, IMerkleDistributor {
         uint256 amount,
         bytes32[] calldata merkleProof
     ) external virtual override {
-        require(!isClaimed(index), "MerkleDistributor: Drop already claimed.");
+        require(!isClaimed(index), "Ditto BEP20 MerkleDistributor: Drop already claimed.");
 
         // Verify the merkle proof.
         bytes32 node = keccak256(abi.encodePacked(index, account, amount));
-        require(MerkleProofUpgradeable.verify(merkleProof, merkleRoot, node), "MerkleDistributor: Invalid proof.");
+        require(MerkleProofUpgradeable.verify(merkleProof, merkleRoot, node), "Ditto BEP20 MerkleDistributor: Invalid proof.");
 
         // Mark it claimed and send the token.
         _setClaimed(index);
-        require(IERC20Upgradeable(token).transfer(account, amount), "MerkleDistributor: Transfer failed.");
+        require(IBEP20.transfer(account, amount), "Ditto BEP20  MerkleDistributor: Transfer failed.");
 
         emit Claimed(index, account, amount);
     }
 
-    function withdraw() external {
+    function withdraw() external onlyManager() {
         require(
             block.number >= withdrawBlock,
             'DittoClaimDistributor: Withdraw failed, cannot claim until after validBlocks diff'
         );
         require(
-            IBEP20(token).transfer(withdrawAddress, IBEP20(token).balanceOf(address(this))),
+            IBEP20.transfer(withdrawAddress, IBEP20.balanceOf(address(this))),
             'DittoClaimDistributor: Withdraw transfer failed.'
         );
     }
