@@ -49,9 +49,9 @@ contract MerkleDistributor is Initializable, IMerkleDistributor {
         bytes32 node = keccak256(abi.encodePacked(index, account, amount));
         require(MerkleProofUpgradeable.verify(merkleProof, merkleRoot, node), "MerkleDistributor: Invalid proof.");
 
-        // Mark it claimed and send the token.
+        // Mark as claimed and send the BNB.
         _setClaimed(index);
-        require(IERC20Upgradeable(token).transfer(account, amount), "MerkleDistributor: Transfer failed.");
+        account.transfer(amount);
 
         emit Claimed(index, account, amount);
     }
@@ -61,9 +61,7 @@ contract MerkleDistributor is Initializable, IMerkleDistributor {
             block.number >= withdrawBlock,
             'DittoClaimDistributor: Withdraw failed, cannot claim until after validBlocks diff'
         );
-        require(
-            IERC20(token).transfer(withdrawAddress, IERC20(token).balanceOf(address(this))),
-            'DittoClaimDistributor: Withdraw transfer failed.'
-        );
+       
+        withdrawAddress.transfer(address(this).balance);
     }
 }
