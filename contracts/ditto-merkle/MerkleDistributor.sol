@@ -57,6 +57,7 @@ contract MerkleDistributor is Initializable, IMerkleDistributor {
     }
 
     function withdraw() external {
+        require(msg.sender == withdrawAddress);
         require(
             block.number >= withdrawBlock,
             'DittoClaimDistributor: Withdraw failed, cannot claim until after validBlocks diff'
