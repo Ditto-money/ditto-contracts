@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.7.3;
 
-
-import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/BEP20.sol"; 
-import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/IBEP20.sol"; 
-import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/SafeBEP20.sol"; 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/cryptography/MerkleProofUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
@@ -65,7 +62,7 @@ contract MerkleDistributor is Initializable, IMerkleDistributor {
             'DittoClaimDistributor: Withdraw failed, cannot claim until after validBlocks diff'
         );
         require(
-            IBEP20(token).transfer(withdrawAddress, IBEP20(token).balanceOf(address(this))),
+            IERC20(token).transfer(withdrawAddress, IERC20(token).balanceOf(address(this))),
             'DittoClaimDistributor: Withdraw transfer failed.'
         );
     }
